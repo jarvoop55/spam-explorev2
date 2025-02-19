@@ -23,7 +23,7 @@ API_HASH = "c30d56d90d59b3efc7954013c580e076"
 SESSIONS = ["session_1.session", "session_2.session", "session_3.session", "session_4.session", "session_5.session"]
 
 # Target group and bot interactions
-TARGET_GROUP = -1002395952299  # Change as needed
+TARGET_GROUP = -1002268194521 # Change as needed
 EXPLORE_GROUP = -1002348881334  # Group where explore commands are sent
 BOTS = ["@CollectCricketersBot", "@CollectYourPlayerxBot"]
 
