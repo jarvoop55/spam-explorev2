@@ -1,9 +1,12 @@
-from telethon import TelegramClient, Button
+from telethon import TelegramClient, events, Button
 import asyncio
 import random
-import os
+import logging
 from flask import Flask
 import threading
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 # Telegram API credentials
 ACCOUNTS = [
@@ -21,42 +24,52 @@ app = Flask(__name__)
 def health_check():
     return "Bot is running", 200
 
+async def handle_buttons(event):
+    """Clicks a random inline button when a bot sends a message with buttons."""
+    if event.reply_markup and hasattr(event.reply_markup, 'rows'):
+        buttons = [btn for row in event.reply_markup.rows for btn in row.buttons if hasattr(btn, "data")]
+        if buttons:
+            button = random.choice(buttons)
+            await asyncio.sleep(random.randint(3, 6))  # Human-like delay
+            try:
+                await event.click(buttons.index(button))
+                logging.info(f"Clicked button: {button.text} in response to {event.sender_id}")
+            except Exception as e:
+                logging.error(f"Failed to click button: {e}")
+
 async def process_group(client):
+    """Handles the interaction in the Telegram group."""
+    @client.on(events.NewMessage(chats=GROUP_ID))
+    async def button_click_listener(event):
+        if event.sender and event.sender.bot:  # Check if sender is a bot
+            await handle_buttons(event)
+
     while True:
         try:
             # Send /explore command
             await client.send_message(GROUP_ID, "/explore")
-            print(f"{client.session.filename}: Sent /explore command")
+            logging.info(f"{client.session.filename}: Sent /explore command")
 
-            # Wait for a response with inline buttons
+            # Wait for bot response
             await asyncio.sleep(5)
 
-            async for message in client.iter_messages(GROUP_ID, limit=10):
-                if message.buttons:
-                    for row in message.buttons:
-                        for button in row:
-                            if isinstance(button, Button):
-                                try:
-                                    await message.click(button.index)
-                                    print(f"{client.session.filename}: Clicked button: {button.text}")
-                                    await asyncio.sleep(random.uniform(2, 5))  # Human-like delay
-                                except Exception as e:
-                                    print(f"{client.session.filename}: Error clicking button: {e}")
-
-            # Wait before repeating
+            # Sleep before sending the next command
             delay = random.randint(305, 310)
-            print(f"{client.session.filename}: Sleeping for {delay} seconds...")
+            logging.info(f"{client.session.filename}: Sleeping for {delay} seconds...")
             await asyncio.sleep(delay)
 
         except Exception as e:
-            print(f"{client.session.filename}: Error: {e}")
-            await asyncio.sleep(60)  # Retry after 60 seconds on error
+            logging.error(f"{client.session.filename}: Error: {e}")
+            await asyncio.sleep(60)  # Retry after 60 seconds if there's an error
 
 async def start_client(account):
+    """Starts a Telethon client and listens for button messages."""
     client = TelegramClient(account["session"], account["api_id"], account["api_hash"])
     await client.start()
-    print(f"{account['session']} started!")
+    logging.info(f"{account['session']} started!")
+
     await process_group(client)
+    await client.run_until_disconnected()
 
 async def run_all_clients():
     tasks = [start_client(account) for account in ACCOUNTS]
