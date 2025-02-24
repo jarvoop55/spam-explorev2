@@ -1,1 +1,1 @@
-web: python explore.py
+web: python nw.py
