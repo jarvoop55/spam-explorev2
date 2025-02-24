@@ -3,8 +3,9 @@ import asyncio
 import random
 import os
 from flask import Flask
+import threading
 
-# Telegram API credentials (using the same API ID and API hash for all accounts)
+# Telegram API credentials
 ACCOUNTS = [
     {"session": "session1", "api_id": 2587846, "api_hash": "3fa173b2763d7e47971573944bd0971a"},
     {"session": "session2", "api_id": 2587846, "api_hash": "3fa173b2763d7e47971573944bd0971a"},
@@ -28,7 +29,7 @@ async def process_group(client):
             await client.send_message(GROUP_ID, "/explore")
             print(f"{client.session.filename}: Sent /explore command")
 
-            # Wait for response
+            # Wait for a response with inline buttons
             await asyncio.sleep(5)
 
             async for message in client.iter_messages(GROUP_ID, limit=10):
@@ -55,15 +56,17 @@ async def start_client(account):
     print(f"{account['session']} started!")
     await process_group(client)
 
-async def main():
+async def run_all_clients():
     tasks = [start_client(account) for account in ACCOUNTS]
     await asyncio.gather(*tasks)
 
+def start_telethon():
+    asyncio.run(run_all_clients())
+
 if __name__ == "__main__":
-    import threading
+    # Start Telethon bot in a separate thread
+    bot_thread = threading.Thread(target=start_telethon, daemon=True)
+    bot_thread.start()
 
-    # Start Telethon clients in a separate thread
-    threading.Thread(target=lambda: asyncio.run(main()), daemon=True).start()
-
-    # Run Flask app for TCP health check
-    app.run(host="0.0.0.0", port=5000)
+    # Start Flask app for TCP health check
+    app.run(host="0.0.0.0", port=5000, threaded=True)
