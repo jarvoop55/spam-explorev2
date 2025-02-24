@@ -9,8 +9,7 @@ import threading
 ACCOUNTS = [
     {"session": "session1", "api_id": 2587846, "api_hash": "3fa173b2763d7e47971573944bd0971a"},
     {"session": "session2", "api_id": 2587846, "api_hash": "3fa173b2763d7e47971573944bd0971a"},
-    {"session": "session3", "api_id": 2587846, "api_hash": "3fa173b2763d7e47971573944bd0971a"},
-    {"session": "session4", "api_id": 2587846, "api_hash": "3fa173b2763d7e47971573944bd0971a"},
+    {"session": "session3", "api_id": 2587846, "api_hash": "3fa173b2763d7e47971573944bd0971a"}
 ]
 
 GROUP_ID = -1002377798958  # Provided group ID
@@ -61,12 +60,17 @@ async def run_all_clients():
     await asyncio.gather(*tasks)
 
 def start_telethon():
-    asyncio.run(run_all_clients())
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(run_all_clients())
+
+def start_flask():
+    app.run(host="0.0.0.0", port=5000, threaded=True)
 
 if __name__ == "__main__":
-    # Start Telethon bot in a separate thread
-    bot_thread = threading.Thread(target=start_telethon, daemon=True)
-    bot_thread.start()
+    # Start Telethon clients in a separate thread
+    telethon_thread = threading.Thread(target=start_telethon, daemon=True)
+    telethon_thread.start()
 
-    # Start Flask app for TCP health check
-    app.run(host="0.0.0.0", port=5000, threaded=True)
+    # Start Flask health check in the main thread
+    start_flask()
