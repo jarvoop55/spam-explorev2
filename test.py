@@ -1,4 +1,4 @@
-from telethon import TelegramClient, events, Button
+from telethon import TelegramClient, Button
 import asyncio
 import random
 import os
@@ -36,9 +36,12 @@ async def process_group(client):
                     for row in message.buttons:
                         for button in row:
                             if isinstance(button, Button):
-                                await message.click(button.index)
-                                print(f"{client.session.filename}: Clicked button: {button.text}")
-                                await asyncio.sleep(random.uniform(2, 5))  # Human-like delay
+                                try:
+                                    await message.click(button.index)
+                                    print(f"{client.session.filename}: Clicked button: {button.text}")
+                                    await asyncio.sleep(random.uniform(2, 5))  # Human-like delay
+                                except Exception as e:
+                                    print(f"{client.session.filename}: Error clicking button: {e}")
 
             # Wait before repeating
             delay = random.randint(305, 310)
