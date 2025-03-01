@@ -1,10 +1,11 @@
 from telethon import TelegramClient, events, Button
+from telethon.sessions import StringSession  # ✅ Add this line
 import asyncio
 import random
 import logging
-import os
 from flask import Flask
 import threading
+import os  # Needed to fetch string sessions from environment variables
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -13,6 +14,8 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 API_ID = 2587846  # Same for all accounts
 API_HASH = "3fa173b2763d7e47971573944bd0971a"  # Same for all accounts
 
+
+client = TelegramClient(StringSession(session_string), API_ID, API_HASH)
 # Load session strings from environment variables
 SESSIONS = [
     os.getenv("SESSION_1"),
