@@ -2,6 +2,7 @@ from telethon import TelegramClient, events, Button
 import asyncio
 import random
 import logging
+import os
 from flask import Flask
 import threading
 
@@ -9,13 +10,23 @@ import threading
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 # Telegram API credentials
-ACCOUNTS = [
-    {"session": "session1", "api_id": 2587846, "api_hash": "3fa173b2763d7e47971573944bd0971a"},
-    {"session": "session2", "api_id": 2587846, "api_hash": "3fa173b2763d7e47971573944bd0971a"},
-    {"session": "session3", "api_id": 2587846, "api_hash": "3fa173b2763d7e47971573944bd0971a"}
+API_ID = 2587846  # Same for all accounts
+API_HASH = "3fa173b2763d7e47971573944bd0971a"  # Same for all accounts
+
+# Load session strings from environment variables
+SESSIONS = [
+    os.getenv("SESSION_1"),
+    os.getenv("SESSION_2"),
+    os.getenv("SESSION_3"),
+    os.getenv("SESSION_4"),
+    os.getenv("SESSION_5"),
+    os.getenv("SESSION_6"),
+    os.getenv("SESSION_7"),
+    os.getenv("SESSION_8"),
 ]
 
-GROUP_ID = -1002377798958  # Provided group ID
+# Target group ID
+GROUP_ID = -1002377798958  # Change as needed
 
 # Flask app for health check
 app = Flask(__name__)
@@ -48,31 +59,31 @@ async def process_group(client):
         try:
             # Send /explore command
             await client.send_message(GROUP_ID, "/explore")
-            logging.info(f"{client.session.filename}: Sent /explore command")
+            logging.info(f"Session: Sent /explore command")
 
             # Wait for bot response
             await asyncio.sleep(5)
 
             # Sleep before sending the next command
             delay = random.randint(305, 310)
-            logging.info(f"{client.session.filename}: Sleeping for {delay} seconds...")
+            logging.info(f"Session: Sleeping for {delay} seconds...")
             await asyncio.sleep(delay)
 
         except Exception as e:
-            logging.error(f"{client.session.filename}: Error: {e}")
+            logging.error(f"Session: Error: {e}")
             await asyncio.sleep(60)  # Retry after 60 seconds if there's an error
 
-async def start_client(account):
-    """Starts a Telethon client and listens for button messages."""
-    client = TelegramClient(account["session"], account["api_id"], account["api_hash"])
+async def start_client(session_string):
+    """Starts a Telethon client using a string session."""
+    client = TelegramClient(StringSession(session_string), API_ID, API_HASH)
     await client.start()
-    logging.info(f"{account['session']} started!")
+    logging.info(f"Client started!")
 
     await process_group(client)
     await client.run_until_disconnected()
 
 async def run_all_clients():
-    tasks = [start_client(account) for account in ACCOUNTS]
+    tasks = [start_client(session) for session in SESSIONS if session]
     await asyncio.gather(*tasks)
 
 def start_telethon():
