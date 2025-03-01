@@ -1,21 +1,19 @@
 from telethon import TelegramClient, events, Button
-from telethon.sessions import StringSession  # ✅ Add this line
+from telethon.sessions import StringSession
 import asyncio
 import random
 import logging
 from flask import Flask
 import threading
-import os  # Needed to fetch string sessions from environment variables
+import os
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-# Telegram API credentials
-API_ID = 2587846  # Same for all accounts
-API_HASH = "3fa173b2763d7e47971573944bd0971a"  # Same for all accounts
+# Telegram API credentials (same for all accounts)
+API_ID = 2587846
+API_HASH = "3fa173b2763d7e47971573944bd0971a"
 
-
-client = TelegramClient(StringSession(session_string), API_ID, API_HASH)
 # Load session strings from environment variables
 SESSIONS = [
     os.getenv("SESSION_1"),
@@ -38,7 +36,7 @@ app = Flask(__name__)
 def health_check():
     return "Bot is running", 200
 
-async def handle_buttons(event):
+async def handle_buttons(event, client):
     """Clicks a random inline button when a bot sends a message with buttons."""
     if event.reply_markup and hasattr(event.reply_markup, 'rows'):
         buttons = [btn for row in event.reply_markup.rows for btn in row.buttons if hasattr(btn, "data")]
@@ -47,46 +45,46 @@ async def handle_buttons(event):
             await asyncio.sleep(random.randint(3, 6))  # Human-like delay
             try:
                 await event.click(buttons.index(button))
-                logging.info(f"Clicked button: {button.text} in response to {event.sender_id}")
+                logging.info(f"{client.session.filename}: Clicked button '{button.text}'")
             except Exception as e:
-                logging.error(f"Failed to click button: {e}")
+                logging.error(f"{client.session.filename}: Failed to click button - {e}")
 
 async def process_group(client):
     """Handles the interaction in the Telegram group."""
     @client.on(events.NewMessage(chats=GROUP_ID))
     async def button_click_listener(event):
         if event.sender and event.sender.bot:  # Check if sender is a bot
-            await handle_buttons(event)
+            await handle_buttons(event, client)
 
     while True:
         try:
             # Send /explore command
             await client.send_message(GROUP_ID, "/explore")
-            logging.info(f"Session: Sent /explore command")
+            logging.info(f"{client.session.filename}: Sent /explore command")
 
             # Wait for bot response
             await asyncio.sleep(5)
 
             # Sleep before sending the next command
             delay = random.randint(305, 310)
-            logging.info(f"Session: Sleeping for {delay} seconds...")
+            logging.info(f"{client.session.filename}: Sleeping for {delay} seconds...")
             await asyncio.sleep(delay)
 
         except Exception as e:
-            logging.error(f"Session: Error: {e}")
+            logging.error(f"{client.session.filename}: Error - {e}")
             await asyncio.sleep(60)  # Retry after 60 seconds if there's an error
 
 async def start_client(session_string):
     """Starts a Telethon client using a string session."""
     client = TelegramClient(StringSession(session_string), API_ID, API_HASH)
     await client.start()
-    logging.info(f"Client started!")
+    logging.info(f"{client.session.filename}: Client started!")
 
     await process_group(client)
     await client.run_until_disconnected()
 
 async def run_all_clients():
-    tasks = [start_client(session) for session in SESSIONS if session]
+    tasks = [start_client(session) for session in SESSIONS if session]  # Ensure session exists
     await asyncio.gather(*tasks)
 
 def start_telethon():
