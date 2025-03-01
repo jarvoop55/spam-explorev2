@@ -31,6 +31,7 @@ GROUP_ID = -1002377798958  # Change as needed
 
 # Flask app for health check
 app = Flask(__name__)
+PORT = int(os.getenv("PORT", 5000))  # Use environment port if available
 
 @app.route("/")
 def health_check():
@@ -45,9 +46,9 @@ async def handle_buttons(event, client):
             await asyncio.sleep(random.randint(3, 6))  # Human-like delay
             try:
                 await event.click(buttons.index(button))
-                logging.info(f"{client.session.filename}: Clicked button '{button.text}'")
+                logging.info(f"Session ({str(client.session.save())[:10]}...): Clicked button '{button.text}'")
             except Exception as e:
-                logging.error(f"{client.session.filename}: Failed to click button - {e}")
+                logging.error(f"Session ({str(client.session.save())[:10]}...): Failed to click button - {e}")
 
 async def process_group(client):
     """Handles the interaction in the Telegram group."""
@@ -60,25 +61,25 @@ async def process_group(client):
         try:
             # Send /explore command
             await client.send_message(GROUP_ID, "/explore")
-            logging.info(f"{client.session.filename}: Sent /explore command")
+            logging.info(f"Session ({str(client.session.save())[:10]}...): Sent /explore command")
 
             # Wait for bot response
             await asyncio.sleep(5)
 
             # Sleep before sending the next command
             delay = random.randint(305, 310)
-            logging.info(f"{client.session.filename}: Sleeping for {delay} seconds...")
+            logging.info(f"Session ({str(client.session.save())[:10]}...): Sleeping for {delay} seconds...")
             await asyncio.sleep(delay)
 
         except Exception as e:
-            logging.error(f"{client.session.filename}: Error - {e}")
+            logging.error(f"Session ({str(client.session.save())[:10]}...): Error - {e}")
             await asyncio.sleep(60)  # Retry after 60 seconds if there's an error
 
 async def start_client(session_string):
     """Starts a Telethon client using a string session."""
     client = TelegramClient(StringSession(session_string), API_ID, API_HASH)
     await client.start()
-    logging.info(f"{client.session.filename}: Client started!")
+    logging.info(f"Session ({str(client.session.save())[:10]}...): Client started!")
 
     await process_group(client)
     await client.run_until_disconnected()
@@ -93,7 +94,7 @@ def start_telethon():
     loop.run_until_complete(run_all_clients())
 
 def start_flask():
-    app.run(host="0.0.0.0", port=5000, threaded=True)
+    app.run(host="0.0.0.0", port=PORT, threaded=True)
 
 if __name__ == "__main__":
     # Start Telethon clients in a separate thread
